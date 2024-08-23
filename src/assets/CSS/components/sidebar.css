@@ -1,0 +1,38 @@
+.left-container {
+    font-weight: 550;
+    background-color: #ffffff;
+    padding-top: 20px;
+    padding-bottom: 40px;
+    padding-left: 20px;
+    padding-right: 10px;
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-radius: 5px;
+    -webkit-box-shadow: 2px 5px 13px -2px rgba(117,116,117,1);
+    -moz-box-shadow: 2px 5px 13px -2px rgba(117,116,117,1);
+    box-shadow: 2px 5px 13px -2px rgba(117,116,117,1);
+}
+
+.menu{
+    padding: 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.3s ease;
+    text-decoration: none;
+    color: #000000;
+}
+
+.menu:hover{
+    color: rgb(228, 149, 0);
+}
+
+.profile-grid{
+    display: grid;
+    grid-template-columns: 0.3fr 1fr;
+    gap: 15px;
+}
+.profile-status{
+    color: green;
+}

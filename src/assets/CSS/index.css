@@ -1,0 +1,29 @@
+@import "./root.css";
+@import "./components/countdiv.css";
+@import "./components/sidebar.css";
+@import "./components/TopSection.css";
+@import "./components/Graph.css";
+@import "./components/rightcontainerdailydata.css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Quicksand:wght@300..700&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+body{
+    font-family: "Montserrat", sans-serif;
+    background-color: #e5e5e5;
+}
+
+.top-container{
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.main-container {
+    display: flex;
+    padding: 20px;
+    gap: 15px;
+}
+
+img{
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+}
