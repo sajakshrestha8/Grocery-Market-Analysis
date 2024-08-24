@@ -26,15 +26,15 @@ export default function Sidebar(props) {
         <Link to={"/dailydata"} className="menu">
           <label>Daily Data</label>
         </Link>
-        <div className="menu">
+        <Link to={"/monthlyanalysis"} className="menu">
           <label>Monthly Analysis</label>
-        </div>
+        </Link>
         <div className="menu">
           <label>Analytical Result</label>
         </div>
-        <div className="menu">
+        <Link to={"/userdata"} className="menu">
           <label>User Database</label>
-        </div>
+        </Link>
         <div className="menu">
           <label>Add Transitions</label>
         </div>

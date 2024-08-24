@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
@@ -72,9 +72,7 @@ def get_daily_transactions():
             id,
             quantity,
             transaction_date
-        FROM transitions, (SELECT @row_number := 0) AS r
-        WHERE DATE(transaction_date) = CURDATE()
-        ORDER BY transaction_date;
+        FROM transitions
     """
     
     cursor.execute(query)
@@ -108,6 +106,36 @@ def get_daily_sales():
     conn.close()
     
     return jsonify(sales)
+
+
+# Update the database 
+
+#Update emplyoee table
+@app.route("/api/update-employee", methods=["POST"])
+def update_employee():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get data from the frontend
+    data = request.json
+    employee_id = data.get("id")
+    name = data.get("name")
+    position = data.get("position")
+    department = data.get("department")
+
+    # Update the employee information
+    query = """
+        UPDATE EmployeeDetails 
+        SET name = %s, position = %s, department = %s 
+        WHERE id = %s
+    """
+    cursor.execute(query, (name, position, department, employee_id))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({"message": "Employee information updated successfully"}), 200
 
 
 # Start the server

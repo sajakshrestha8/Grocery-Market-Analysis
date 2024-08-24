@@ -8,7 +8,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import BarGraph from "../Images/Bar-Graph.jpg";
 
 export default function Graph(props) {
   return (
@@ -19,7 +18,7 @@ export default function Graph(props) {
           margin={{
             top: 15,
             right: 30,
-            left: 20,
+            left: 0,
             bottom: 5,
           }}
         >
