@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
@@ -15,6 +15,90 @@ def get_db_connection():
         database="market_basket_db"
     )
     return conn
+
+#Apriori algorithm
+def calculate_support(itemset, transactions):
+    count = 0
+    for transaction in transactions:
+        if set(itemset).issubset(set(transaction)):
+            count += 1
+    return count / len(transactions)
+
+def generate_candidates(prev_freq_itemsets, k):
+    candidates = []
+    len_prev_itemsets = len(prev_freq_itemsets)
+    
+    for i in range(len_prev_itemsets):
+        for j in range(i + 1, len_prev_itemsets):
+            candidate = list(set(prev_freq_itemsets[i]).union(set(prev_freq_itemsets[j])))
+            candidate.sort()
+            if len(candidate) == k and candidate not in candidates:
+                candidates.append(candidate)
+    
+    return candidates
+
+def filter_itemsets(candidates, transactions, min_support):
+    freq_itemsets = []
+    itemset_support = {}
+    
+    for candidate in candidates:
+        support = calculate_support(candidate, transactions)
+        if support >= min_support:
+            freq_itemsets.append(candidate)
+            itemset_support[tuple(candidate)] = support
+            
+    return freq_itemsets, itemset_support
+
+def apriori(transactions, min_support):
+    items = sorted(set(item for transaction in transactions for item in transaction))
+    candidates = [[item] for item in items]
+    all_freq_itemsets = []
+    itemset_support = {}
+    k = 1
+    while candidates:
+        freq_itemsets, support_data = filter_itemsets(candidates, transactions, min_support)
+        all_freq_itemsets.extend(freq_itemsets)
+        itemset_support.update(support_data)
+        k += 1
+        candidates = generate_candidates(freq_itemsets, k)
+    
+    return all_freq_itemsets, itemset_support
+
+def generate_rules(freq_itemsets, itemset_support, min_confidence):
+    rules = []
+    for itemset in freq_itemsets:
+        if len(itemset) > 1:
+            for i in range(1, len(itemset)):
+                antecedents = itemset[:i]
+                consequents = itemset[i:]
+                antecedent_support = itemset_support.get(tuple(antecedents), 0)
+                confidence = itemset_support[tuple(itemset)] / antecedent_support
+                if confidence >= min_confidence:
+                    rules.append({
+                        'antecedent': antecedents,
+                        'consequent': consequents,
+                        'confidence': confidence
+                    })
+    return rules
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/apriori', methods=['POST'])
+def apriori_route():
+    data = request.get_data(as_text=True)
+    transactions = data['transactions']
+    min_support = data['min_support']
+    min_confidence = data['min_confidence']
+    
+    freq_itemsets, itemset_support = apriori(transactions, min_support)
+    rules = generate_rules(freq_itemsets, itemset_support, min_confidence)
+    
+    return jsonify({
+        'frequent_itemsets': freq_itemsets,
+        'rules': rules
+    })
 
 # stock count of all products
 @app.route("/api/stock-count", methods=["GET"])
@@ -123,19 +207,34 @@ def update_employee():
     position = data.get("position")
     department = data.get("department")
 
-    # Update the employee information
-    query = """
-        UPDATE EmployeeDetails 
-        SET name = %s, position = %s, department = %s 
-        WHERE id = %s
-    """
-    cursor.execute(query, (name, position, department, employee_id))
-    conn.commit()
+    # Check if the employee already exists
+    check_query = "SELECT * FROM EmployeeDetails WHERE id = %s"
+    cursor.execute(check_query, (employee_id,))
+    result = cursor.fetchone()
 
+    if result:
+        # Update the existing employee information
+        query = """
+            UPDATE EmployeeDetails 
+            SET name = %s, position = %s, department = %s 
+            WHERE id = %s
+        """
+        cursor.execute(query, (name, position, department, employee_id))
+    else:
+        # Insert a new employee record
+        query = """
+            INSERT INTO EmployeeDetails (id, name, position, department) 
+            VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (employee_id, name, position, department))
+    
+    conn.commit()
     cursor.close()
     conn.close()
-
+    
+    print(data)
     return jsonify({"message": "Employee information updated successfully"}), 200
+
 
 
 # Start the server
