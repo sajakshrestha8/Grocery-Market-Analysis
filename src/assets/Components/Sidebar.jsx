@@ -29,8 +29,11 @@ export default function Sidebar(props) {
         <Link to={"/monthlyanalysis"} className="menu">
           <label>Monthly Analysis</label>
         </Link>
-        <div className="menu">
+        <Link to={"/analysticalresult"} className="menu">
           <label>Analytical Result</label>
+        </Link>
+        <div className="menu">
+          <label>Prediction Report </label>
         </div>
         <Link to={"/userdata"} className="menu">
           <label>User Database</label>

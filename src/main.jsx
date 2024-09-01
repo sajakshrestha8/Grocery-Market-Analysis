@@ -7,6 +7,7 @@ import WrongPath from "./assets/Components/WrongPath.jsx";
 import DailyData from "./DailyData.jsx";
 import MonthyAnalysis from "./MonthlyAnalysis.jsx";
 import UserData from "./UserData.jsx";
+import AnalyticalResult from "./assets/Components/AnalyticalResult.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/" element={<App />} />
         <Route path="/dailydata" element={<DailyData />} />
         <Route path="/monthlyanalysis" element={<MonthyAnalysis />} />
+        <Route path="/analysticalresult" element={<AnalyticalResult />} />
         <Route path="/userdata" element={<UserData />} />
         <Route path="*" element={<WrongPath />} />
       </Routes>

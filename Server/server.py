@@ -2,6 +2,9 @@ from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
+import csv
+from io import StringIO
+
 
 app = Flask(__name__)
 CORS(app)
@@ -87,10 +90,21 @@ def index():
 
 @app.route('/apriori', methods=['POST'])
 def apriori_route():
-    data = request.get_data(as_text=True)
-    transactions = data['transactions']
-    min_support = data['min_support']
-    min_confidence = data['min_confidence']
+    data = request.get_data(as_text=True)  # Get raw CSV data as a string
+    csv_reader = csv.reader(StringIO(data))
+    
+    transactions = []
+    
+    # Skip header row
+    next(csv_reader)
+    
+    for row in csv_reader:
+        transaction_items = row[1:]  # Skip the TransactionID and get the items
+        transactions.append(transaction_items)
+    
+    # For example, let's assume min_support and min_confidence are set to 0.5 and 0.7 respectively
+    min_support = 0.5
+    min_confidence = 0.7
     
     freq_itemsets, itemset_support = apriori(transactions, min_support)
     rules = generate_rules(freq_itemsets, itemset_support, min_confidence)
@@ -99,7 +113,6 @@ def apriori_route():
         'frequent_itemsets': freq_itemsets,
         'rules': rules
     })
-
 # stock count of all products
 @app.route("/api/stock-count", methods=["GET"])
 def get_stock_count():
