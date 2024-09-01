@@ -102,17 +102,35 @@ def apriori_route():
         transaction_items = row[1:]  # Skip the TransactionID and get the items
         transactions.append(transaction_items)
     
-    # For example, let's assume min_support and min_confidence are set to 0.5 and 0.7 respectively
-    min_support = 0.5
-    min_confidence = 0.7
+    # Set minimum support and confidence values
+    min_support = 0.3
+    min_confidence = 0.3
     
+    # Apply the Apriori algorithm
     freq_itemsets, itemset_support = apriori(transactions, min_support)
+    
+    # Generate association rules
     rules = generate_rules(freq_itemsets, itemset_support, min_confidence)
+    
+    # Create a list to store associated itemsets
+    associated_itemsets = []
+
+    # Extract the associated itemsets from the rules
+    for rule in rules:
+        antecedent = rule['antecedent']
+        consequent = rule['consequent']
+        associated_itemsets.append({
+            'antecedent': antecedent,
+            'consequent': consequent,
+            'confidence': rule['confidence']
+        })
     
     return jsonify({
         'frequent_itemsets': freq_itemsets,
-        'rules': rules
+        'rules': rules,
+        'associated_itemsets': associated_itemsets
     })
+
 # stock count of all products
 @app.route("/api/stock-count", methods=["GET"])
 def get_stock_count():
