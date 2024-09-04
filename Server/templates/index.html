@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Basket Analysis</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Market Basket Analysis</h1>
+
+        <form id="analyze-form">
+            <div class="form-group">
+                <label for="data">Enter transactions (comma-separated items per line):</label>
+                <textarea id="data" class="form-control" rows="10" placeholder="Enter each transaction on a new line, with items separated by commas"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Analyze</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('analyze-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const data = document.getElementById('data').value.trim().split('\n').map(line => line.trim());
+            
+            if (data.length === 0 || data.every(line => line === '')) {
+                alert('Please enter some transaction data.');
+                return;
+            }
+
+            fetch('/apriori', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ data }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Unknown error'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Analysis complete:', data);
+                // Assuming you want to redirect to the results page:
+                window.location.href = '/results';
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+                alert('An error occurred while processing your request. Please try again. Error: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>

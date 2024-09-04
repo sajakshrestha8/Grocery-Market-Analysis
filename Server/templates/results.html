@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Basket Analysis Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Market Basket Analysis Results</h1>
+
+        {% if rules|length == 0 %}
+        <div class="alert alert-info" role="alert">
+            No rules found based on the current analysis.
+        </div>
+        {% else %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Formal Rule</th>
+                        <th>Description</th>
+                        <th title="The proportion of transactions that contain the itemset">Support</th>
+                        <th title="The likelihood that a customer buying the antecedent also buys the consequent">Confidence</th>
+                        <th title="The ratio of the observed support to the expected support if the antecedent and consequent were independent">Lift</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        <td>{{ rule['formal_rule'] }}</td>
+                        <td>{{ rule['rule'] }}</td>
+                        <td>{{ rule['support'] }}</td>
+                        <td>{{ rule['confidence'] }}</td>
+                        <td>{{ rule['lift'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

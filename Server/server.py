@@ -1,13 +1,65 @@
-from flask import Flask, jsonify, request, render_template
+import pandas as pd
+from apyori import apriori as apriori_algorithm
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+import pickle
+import joblib
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import mysql.connector
 from datetime import datetime
 import csv
 from io import StringIO
 
-
 app = Flask(__name__)
 CORS(app)
+
+# Step 1: Load and preprocess the dataset
+chunk_size = 5000
+chunks = pd.read_csv('transactions.csv', chunksize=chunk_size)
+df = pd.concat(chunks, ignore_index=True)
+
+print(df.columns)
+
+# Create the target column based on Price
+df['target_column'] = df['Price'].apply(lambda x: 1 if x > 1000 else 0)
+
+# Drop any rows with missing values and apply one-hot encoding
+df.dropna(inplace=True)
+df = pd.get_dummies(df, drop_first=True)
+
+# Split the data into features (X) and target (y)
+X = df.drop('target_column', axis=1)
+y = df['target_column']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Step 2: Train the RandomForest model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+# Evaluate model accuracy
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Model Accuracy: {accuracy * 100:.2f}%')
+
+# Save the trained model
+joblib.dump(model, 'trained_model.pkl')
+print('Model saved as trained_model.pkl')
+
+# Load the trained model with error handling
+try:
+    clf = joblib.load('trained_model.pkl')
+except FileNotFoundError:
+    print("Model file not found. Ensure that the model has been trained and saved.")
+    exit(1)
+except EOFError:
+    print("Model file is empty or corrupted. Re-run the training process to regenerate it.")
+    exit(1)
+except pickle.UnpicklingError:
+    print("Error unpickling the model file. Ensure the file is not corrupted.")
+    exit(1)
 
 # Database connection
 def get_db_connection():
@@ -19,7 +71,7 @@ def get_db_connection():
     )
     return conn
 
-#Apriori algorithm
+# Apriori algorithm functions
 def calculate_support(itemset, transactions):
     count = 0
     for transaction in transactions:
@@ -88,19 +140,18 @@ def generate_rules(freq_itemsets, itemset_support, min_confidence):
 def index():
     return render_template('index.html')
 
+# Route for Apriori algorithm
 @app.route('/apriori', methods=['POST'])
 def apriori_route():
-    data = request.get_data(as_text=True)  # Get raw CSV data as a string
+    print("Apriori route hit")  # Debug statement to check if route is hit
+    data = request.get_data(as_text=True)  # Get raw data as a string
     csv_reader = csv.reader(StringIO(data))
     
     transactions = []
-    
-    # Skip header row
-    next(csv_reader)
-    
+
     for row in csv_reader:
-        transaction_items = row[1:]  # Skip the TransactionID and get the items
-        transactions.append(transaction_items)
+        # In the CSV format, you do not have a header row, so directly append the transaction items
+        transactions.append(row)
     
     # Set minimum support and confidence values
     min_support = 0.3
@@ -131,7 +182,8 @@ def apriori_route():
         'associated_itemsets': associated_itemsets
     })
 
-# stock count of all products
+
+# Route for getting the stock count of all products
 @app.route("/api/stock-count", methods=["GET"])
 def get_stock_count():
     conn = get_db_connection()
@@ -145,7 +197,7 @@ def get_stock_count():
     
     return jsonify(stock_count)
 
-# total number of customers
+# Route for getting the total number of customers
 @app.route("/api/total-customers", methods=["GET"])
 def get_total_customers():
     conn = get_db_connection()
@@ -159,7 +211,7 @@ def get_total_customers():
     
     return jsonify({"total_customers": total_customers})
 
-# information of all employees
+# Route for getting information of all employees
 @app.route("/api/employees", methods=["GET"])
 def get_employees():
     conn = get_db_connection()
@@ -173,7 +225,7 @@ def get_employees():
     
     return jsonify(employees)
 
-# daily transitions
+# Route for getting daily transactions
 @app.route("/api/daily-transactions", methods=["GET"])
 def get_daily_transactions():
     conn = get_db_connection()
@@ -198,7 +250,7 @@ def get_daily_transactions():
     
     return jsonify(daily_transactions)
 
-# daily sales
+# Route for getting daily sales
 @app.route("/api/daily-sales", methods=["GET"])
 def get_daily_sales():
     conn = get_db_connection()
@@ -222,10 +274,7 @@ def get_daily_sales():
     
     return jsonify(sales)
 
-
-# Update the database 
-
-#Update emplyoee table
+# Route for updating the employee table
 @app.route("/api/update-employee", methods=["POST"])
 def update_employee():
     conn = get_db_connection()
@@ -251,23 +300,30 @@ def update_employee():
             WHERE id = %s
         """
         cursor.execute(query, (name, position, department, employee_id))
+        conn.commit()
+        message = "Employee information updated successfully"
     else:
-        # Insert a new employee record
+        # Insert new employee information
         query = """
-            INSERT INTO EmployeeDetails (id, name, position, department) 
+            INSERT INTO EmployeeDetails (id, name, position, department)
             VALUES (%s, %s, %s, %s)
         """
         cursor.execute(query, (employee_id, name, position, department))
-    
-    conn.commit()
+        conn.commit()
+        message = "New employee added successfully"
+
     cursor.close()
     conn.close()
-    
-    print(data)
-    return jsonify({"message": "Employee information updated successfully"}), 200
 
+    return jsonify({"message": message})
 
+# Route for predicting using the trained model
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.get_json()
+    features = [data['feature1'], data['feature2'], data['feature3']]  # Adjust based on your features
+    prediction = clf.predict([features])
+    return jsonify({'prediction': int(prediction[0])})
 
-# Start the server
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True, port=8000)
